@@ -10,9 +10,31 @@ type CloudflareLifecycle = {
   chunked?: boolean;
 };
 
-export async function GET(
-  request: Request
-) {
+type CloudflareRecording = {
+  uid?: string;
+  readyToStream?: boolean;
+  status?: {
+    state?: string;
+    pctComplete?: string;
+    errorReasonCode?: string;
+    errorReasonText?: string;
+  };
+  playback?: {
+    hls?: string;
+    dash?: string;
+  };
+};
+
+type CloudflareRecordingsResponse = {
+  success?: boolean;
+  result?: CloudflareRecording[];
+  errors?: Array<{
+    code?: number;
+    message?: string;
+  }>;
+};
+
+export async function GET(request: Request) {
   const syncSecret =
     process.env.LIVE_SYNC_SECRET;
 
@@ -46,11 +68,12 @@ export async function GET(
       }
     );
   }
+
   const accountId =
     process.env.CLOUDFLARE_ACCOUNT_ID;
 
   const apiToken =
-  process.env.CLOUDFLARE_STREAM_TOKEN;
+    process.env.CLOUDFLARE_STREAM_TOKEN;
 
   const liveInputId =
     process.env.CLOUDFLARE_LIVE_INPUT_ID;
@@ -78,36 +101,210 @@ export async function GET(
   }
 
   try {
-    // -----------------------------------------------------
-    // 1. Read Cloudflare lifecycle
-    // -----------------------------------------------------
+    const now =
+      new Date().toISOString();
 
-    const customerCode =
-      hlsUrl.match(
-        /customer-([^.]+)\.cloudflarestream\.com/
-      )?.[1];
+    // -------------------------------------------------
+    // 1. First check broadcasts that already ended
+    //    and are waiting for Cloudflare recording.
+    // -------------------------------------------------
 
-    if (!customerCode) {
+    const {
+      data: endedBroadcasts,
+      error: endedBroadcastsError,
+    } = await supabase
+      .from("live_broadcasts")
+      .select(`
+        id,
+        title,
+        status,
+        scheduled_start,
+        scheduled_end,
+        playback_url,
+        cloudflare_video_uid,
+        went_live_at,
+        ended_at
+      `)
+      .eq("published", true)
+      .eq("status", "ended")
+      .not(
+        "cloudflare_video_uid",
+        "is",
+        null
+      )
+      .order("ended_at", {
+        ascending: false,
+      });
+
+    if (endedBroadcastsError) {
       throw new Error(
-        "Unable to determine Cloudflare customer code."
+        endedBroadcastsError.message
       );
     }
+
+    const endedBroadcast =
+      endedBroadcasts?.[0] ?? null;
+
+    // -------------------------------------------------
+    // 2. If an ended broadcast exists, ask Cloudflare
+    //    whether its recording is ready.
+    // -------------------------------------------------
+
+    if (
+      endedBroadcast &&
+      endedBroadcast.cloudflare_video_uid
+    ) {
+      const recordingsUrl =
+        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/live_inputs/${liveInputId}/videos`;
+
+      const recordingsResponse =
+        await fetch(recordingsUrl, {
+          method: "GET",
+          headers: {
+            Authorization:
+              `Bearer ${apiToken}`,
+            "Content-Type":
+              "application/json",
+          },
+          cache: "no-store",
+        });
+
+      if (!recordingsResponse.ok) {
+        const text =
+          await recordingsResponse.text();
+
+        throw new Error(
+          `Cloudflare recordings request failed: ${recordingsResponse.status} ${text}`
+        );
+      }
+
+      const recordings =
+        (await recordingsResponse.json()) as CloudflareRecordingsResponse;
+
+      if (
+        recordings.success === false
+      ) {
+        throw new Error(
+          recordings.errors
+            ?.map(
+              (error) =>
+                error.message
+            )
+            .filter(Boolean)
+            .join(", ") ||
+            "Cloudflare recordings request failed."
+        );
+      }
+
+      const recording =
+        recordings.result?.find(
+          (item) =>
+            item.uid ===
+            endedBroadcast.cloudflare_video_uid
+        );
+
+      if (
+        recording &&
+        recording.readyToStream === true
+      ) {
+        const replayHlsUrl =
+          recording.playback?.hls ??
+          `https://customer-${getCustomerCode(
+            hlsUrl
+          )}.cloudflarestream.com/${endedBroadcast.cloudflare_video_uid}/manifest/video.m3u8`;
+
+        const {
+          data: replayBroadcast,
+          error: replayUpdateError,
+        } = await supabase
+          .from("live_broadcasts")
+          .update({
+            status: "replay",
+
+            playback_url:
+              replayHlsUrl,
+
+            last_cloudflare_status:
+              recording.status?.state ??
+              "ready",
+
+            last_synced_at:
+              now,
+
+            updated_at:
+              now,
+          })
+          .eq(
+            "id",
+            endedBroadcast.id
+          )
+          .select()
+          .single();
+
+        if (replayUpdateError) {
+          throw new Error(
+            replayUpdateError.message
+          );
+        }
+
+        return NextResponse.json({
+          ok: true,
+
+          action:
+            "Recording is ready. Broadcast changed from ended to replay.",
+
+          broadcast: {
+            id:
+              replayBroadcast.id,
+
+            title:
+              replayBroadcast.title,
+
+            previousStatus:
+              "ended",
+
+            status:
+              replayBroadcast.status,
+
+            cloudflareVideoUID:
+              replayBroadcast
+                .cloudflare_video_uid,
+
+            playbackUrl:
+              replayBroadcast
+                .playback_url,
+
+            wentLiveAt:
+              replayBroadcast
+                .went_live_at,
+
+            endedAt:
+              replayBroadcast
+                .ended_at,
+          },
+        });
+      }
+    }
+
+    // -------------------------------------------------
+    // 3. Read current Cloudflare Live lifecycle
+    // -------------------------------------------------
+
+    const customerCode =
+      getCustomerCode(hlsUrl);
 
     const lifecycleUrl =
       `https://customer-${customerCode}.cloudflarestream.com/${liveInputId}/lifecycle`;
 
     const lifecycleResponse =
-      await fetch(
-        lifecycleUrl,
-        {
-          method: "GET",
-          headers: {
-            Authorization:
-              `Bearer ${apiToken}`,
-          },
-          cache: "no-store",
-        }
-      );
+      await fetch(lifecycleUrl, {
+        method: "GET",
+        headers: {
+          Authorization:
+            `Bearer ${apiToken}`,
+        },
+        cache: "no-store",
+      });
 
     if (!lifecycleResponse.ok) {
       const text =
@@ -121,12 +318,9 @@ export async function GET(
     const cloudflare =
       (await lifecycleResponse.json()) as CloudflareLifecycle;
 
-    const now =
-      new Date().toISOString();
-
-    // -----------------------------------------------------
-    // 2. Find currently active broadcast first
-    // -----------------------------------------------------
+    // -------------------------------------------------
+    // 4. Find currently active broadcast
+    // -------------------------------------------------
 
     const {
       data: activeBroadcasts,
@@ -139,24 +333,19 @@ export async function GET(
         status,
         scheduled_start,
         scheduled_end,
+        playback_url,
         cloudflare_video_uid,
         went_live_at,
         ended_at
       `)
       .eq("published", true)
-      .in(
-        "status",
-        [
-          "starting_soon",
-          "live"
-        ]
-      )
-      .order(
-        "scheduled_start",
-        {
-          ascending: true,
-        }
-      );
+      .in("status", [
+        "starting_soon",
+        "live",
+      ])
+      .order("scheduled_start", {
+        ascending: true,
+      });
 
     if (activeError) {
       throw new Error(
@@ -167,10 +356,10 @@ export async function GET(
     let broadcast =
       activeBroadcasts?.[0] ?? null;
 
-    // -----------------------------------------------------
-    // 3. If there is no active broadcast,
-    //    find the nearest scheduled broadcast
-    // -----------------------------------------------------
+    // -------------------------------------------------
+    // 5. If there is no active broadcast,
+    //    find nearest scheduled broadcast
+    // -------------------------------------------------
 
     if (!broadcast) {
       const {
@@ -184,21 +373,16 @@ export async function GET(
           status,
           scheduled_start,
           scheduled_end,
+          playback_url,
           cloudflare_video_uid,
           went_live_at,
           ended_at
         `)
         .eq("published", true)
-        .eq(
-          "status",
-          "scheduled"
-        )
-        .order(
-          "scheduled_start",
-          {
-            ascending: true,
-          }
-        );
+        .eq("status", "scheduled")
+        .order("scheduled_start", {
+          ascending: true,
+        });
 
       if (scheduledError) {
         throw new Error(
@@ -225,7 +409,7 @@ export async function GET(
               distance:
                 Math.abs(
                   start -
-                  nowDate
+                    nowDate
                 ),
             };
           })
@@ -236,9 +420,9 @@ export async function GET(
           )[0] ?? null;
     }
 
-    // -----------------------------------------------------
-    // No broadcast is scheduled
-    // -----------------------------------------------------
+    // -------------------------------------------------
+    // 6. Nothing currently needs lifecycle sync
+    // -------------------------------------------------
 
     if (!broadcast) {
       return NextResponse.json({
@@ -247,13 +431,15 @@ export async function GET(
         cloudflare,
 
         action:
-          "No published broadcast available to synchronize.",
+          endedBroadcast
+            ? "Ended broadcast recording is still processing."
+            : "No published broadcast available to synchronize.",
       });
     }
 
-    // -----------------------------------------------------
-    // 4. Determine desired status
-    // -----------------------------------------------------
+    // -------------------------------------------------
+    // 7. Determine desired broadcast status
+    // -------------------------------------------------
 
     let nextStatus =
       broadcast.status;
@@ -267,7 +453,7 @@ export async function GET(
     let videoUID =
       broadcast.cloudflare_video_uid;
 
-    // Cloudflare is preparing the incoming stream.
+    // Cloudflare is preparing incoming stream.
 
     if (
       cloudflare.status ===
@@ -278,7 +464,7 @@ export async function GET(
         "starting_soon";
     }
 
-    // Cloudflare confirms actual LIVE playback.
+    // Cloudflare confirms actual live playback.
 
     if (
       cloudflare.live === true &&
@@ -301,16 +487,15 @@ export async function GET(
       endedAt = null;
     }
 
-    // -----------------------------------------------------
-    // 5. Stream stopped
-    // -----------------------------------------------------
+    // -------------------------------------------------
+    // 8. Stream stopped
+    // -------------------------------------------------
 
     if (
       cloudflare.live === false &&
       cloudflare.status ===
         "disconnected"
     ) {
-      // It was actually live before.
       if (
         broadcast.status ===
           "live" ||
@@ -321,10 +506,7 @@ export async function GET(
 
         endedAt =
           endedAt ?? now;
-      }
-
-      // Stream started initializing but never became live.
-      else if (
+      } else if (
         broadcast.status ===
           "starting_soon"
       ) {
@@ -333,9 +515,9 @@ export async function GET(
       }
     }
 
-    // -----------------------------------------------------
-    // 6. Update Supabase
-    // -----------------------------------------------------
+    // -------------------------------------------------
+    // 9. Update Supabase
+    // -------------------------------------------------
 
     const {
       data: updatedBroadcast,
@@ -381,9 +563,9 @@ export async function GET(
       );
     }
 
-    // -----------------------------------------------------
-    // Result
-    // -----------------------------------------------------
+    // -------------------------------------------------
+    // 10. Result
+    // -------------------------------------------------
 
     return NextResponse.json({
       ok: true,
@@ -416,6 +598,10 @@ export async function GET(
           updatedBroadcast
             .cloudflare_video_uid,
 
+        playbackUrl:
+          updatedBroadcast
+            .playback_url,
+
         wentLiveAt:
           updatedBroadcast
             .went_live_at,
@@ -445,4 +631,21 @@ export async function GET(
       }
     );
   }
+}
+
+function getCustomerCode(
+  hlsUrl: string
+): string {
+  const customerCode =
+    hlsUrl.match(
+      /customer-([^.]+)\.cloudflarestream\.com/
+    )?.[1];
+
+  if (!customerCode) {
+    throw new Error(
+      "Unable to determine Cloudflare customer code."
+    );
+  }
+
+  return customerCode;
 }
