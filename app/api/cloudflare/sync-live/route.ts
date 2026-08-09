@@ -50,7 +50,7 @@ export async function GET(
     process.env.CLOUDFLARE_ACCOUNT_ID;
 
   const apiToken =
-    process.env.CLOUDFLARE_API_TOKEN;
+  process.env.CLOUDFLARE_STREAM_TOKEN;
 
   const liveInputId =
     process.env.CLOUDFLARE_LIVE_INPUT_ID;
