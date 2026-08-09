@@ -312,10 +312,16 @@ export async function deleteLiveBroadcast(
   id: string
 ): Promise<void> {
   try {
-    const { error } = await supabase
+    console.log(
+      "DELETE LIVE BROADCAST ID:",
+      id
+    );
+
+    const { data, error } = await supabase
       .from("live_broadcasts")
       .delete()
-      .eq("id", id);
+      .eq("id", id)
+      .select("id");
 
     if (error) {
       console.error(
@@ -329,6 +335,17 @@ export async function deleteLiveBroadcast(
       );
 
       throw new Error(error.message);
+    }
+
+    console.log(
+      "DELETE LIVE BROADCAST RESULT:",
+      data
+    );
+
+    if (!data || data.length === 0) {
+      throw new Error(
+        "Supabase did not delete the broadcast."
+      );
     }
   } catch (error) {
     console.error(

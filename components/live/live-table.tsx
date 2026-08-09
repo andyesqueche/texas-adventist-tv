@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { formatInTimeZone } from "date-fns-tz";
 
 import { Badge } from "@/components/ui/badge";
-
 import {
   deleteLiveBroadcast,
   type LiveBroadcastRecord,
@@ -20,26 +19,16 @@ type Props = {
 
 const BROADCAST_TIME_ZONE = "America/Chicago";
 
-export function LiveTable({
-  broadcasts,
-}: Props) {
+export function LiveTable({ broadcasts }: Props) {
   const router = useRouter();
 
   const [items, setItems] =
-    useState<LiveBroadcastRecord[]>(
-      broadcasts
-    );
+    useState<LiveBroadcastRecord[]>(broadcasts);
 
   const [deletingId, setDeletingId] =
     useState<string | null>(null);
 
-  // ---------------------------------------------------------
-  // Delete Broadcast
-  // ---------------------------------------------------------
-
-  async function removeBroadcast(
-    id: string
-  ) {
+  async function removeBroadcast(id: string) {
     const confirmed = window.confirm(
       "Delete this broadcast?\n\nThis action cannot be undone."
     );
@@ -53,19 +42,14 @@ export function LiveTable({
 
       await deleteLiveBroadcast(id);
 
-      // Remove immediately from the table
       setItems((currentItems) =>
         currentItems.filter(
-          (broadcast) =>
-            broadcast.id !== id
+          (broadcast) => broadcast.id !== id
         )
       );
 
-      toast.success(
-        "Broadcast deleted."
-      );
+      toast.success("Broadcast deleted.");
 
-      // Refresh server data
       router.refresh();
     } catch (error) {
       console.error(
@@ -83,19 +67,11 @@ export function LiveTable({
     }
   }
 
-  // ---------------------------------------------------------
-  // Status Badge
-  // ---------------------------------------------------------
-
   function statusBadge(
     status: LiveBroadcastRecord["status"]
   ) {
     if (status === "live") {
-      return (
-        <Badge>
-          LIVE
-        </Badge>
-      );
+      return <Badge>LIVE</Badge>;
     }
 
     if (status === "scheduled") {
@@ -137,10 +113,6 @@ export function LiveTable({
     );
   }
 
-  // ---------------------------------------------------------
-  // Central Time Formatter
-  // ---------------------------------------------------------
-
   function formatCentralTime(
     value: string | null
   ) {
@@ -163,10 +135,6 @@ export function LiveTable({
       return "Invalid date";
     }
   }
-
-  // ---------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------
 
   return (
     <div className="overflow-hidden rounded-xl border border-zinc-800">
@@ -201,7 +169,6 @@ export function LiveTable({
               key={broadcast.id}
               className="border-t border-zinc-800 transition hover:bg-zinc-900"
             >
-              {/* Broadcast */}
               <td className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-800">
@@ -215,23 +182,19 @@ export function LiveTable({
 
                     {broadcast.subtitle ? (
                       <p className="mt-1 text-sm text-zinc-400">
-                        {
-                          broadcast.subtitle
-                        }
+                        {broadcast.subtitle}
                       </p>
                     ) : null}
                   </div>
                 </div>
               </td>
 
-              {/* Status */}
               <td className="p-4">
                 {statusBadge(
                   broadcast.status
                 )}
               </td>
 
-              {/* Scheduled Start */}
               <td className="p-4 text-zinc-300">
                 {formatCentralTime(
                   broadcast.scheduled_start
@@ -244,7 +207,6 @@ export function LiveTable({
                 ) : null}
               </td>
 
-              {/* Published */}
               <td className="p-4">
                 {broadcast.published ? (
                   <Badge>
@@ -257,7 +219,6 @@ export function LiveTable({
                 )}
               </td>
 
-              {/* Actions */}
               <td className="p-4">
                 <div className="flex justify-end gap-2">
                   <Link
@@ -265,15 +226,13 @@ export function LiveTable({
                     className="inline-flex items-center gap-2 rounded-md border border-zinc-700 px-3 py-2 text-sm text-zinc-200 transition hover:bg-zinc-800"
                   >
                     <Pencil className="h-4 w-4" />
-
                     Edit
                   </Link>
 
                   <button
                     type="button"
                     disabled={
-                      deletingId ===
-                      broadcast.id
+                      deletingId === broadcast.id
                     }
                     onClick={() =>
                       removeBroadcast(
@@ -284,8 +243,7 @@ export function LiveTable({
                   >
                     <Trash2 className="h-4 w-4" />
 
-                    {deletingId ===
-                    broadcast.id
+                    {deletingId === broadcast.id
                       ? "Deleting..."
                       : "Delete"}
                   </button>
