@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import {
+    formatInTimeZone,
+    fromZonedTime,
+} from "date-fns-tz";
 
 import { MediaUpload } from "@/components/uploads/media-upload";
 import { uploadFile } from "@/lib/storage/upload-file";
@@ -13,6 +17,8 @@ import type {
     SaveLiveBroadcastInput,
 } from "@/lib/repositories/live.repository";
 
+const BROADCAST_TIME_ZONE = "America/Chicago";
+
 type Props = {
     initialData?: LiveBroadcastRecord;
 };
@@ -22,7 +28,9 @@ export function LiveForm({
 }: Props) {
     const router = useRouter();
 
-    const isEditing = Boolean(initialData?.id);
+    const isEditing = Boolean(
+        initialData?.id
+    );
 
     // -------------------------------------------------------
     // Broadcast Information
@@ -36,9 +44,10 @@ export function LiveForm({
         initialData?.subtitle ?? ""
     );
 
-    const [description, setDescription] = useState(
-        initialData?.description ?? ""
-    );
+    const [description, setDescription] =
+        useState(
+            initialData?.description ?? ""
+        );
 
     // -------------------------------------------------------
     // Artwork
@@ -65,11 +74,13 @@ export function LiveForm({
     // -------------------------------------------------------
 
     const cloudflareLiveHLS =
-        process.env.NEXT_PUBLIC_CLOUDFLARE_LIVE_HLS_URL ?? "";
+        process.env
+            .NEXT_PUBLIC_CLOUDFLARE_LIVE_HLS_URL ??
+        "";
 
     const [playbackUrl] = useState(
         initialData?.playback_url ||
-        cloudflareLiveHLS
+            cloudflareLiveHLS
     );
 
     // -------------------------------------------------------
@@ -79,18 +90,18 @@ export function LiveForm({
     const [scheduledStart, setScheduledStart] =
         useState(
             initialData?.scheduled_start
-                ? toLocalDateTimeInput(
-                    initialData.scheduled_start
-                )
+                ? toCentralDateTimeInput(
+                      initialData.scheduled_start
+                  )
                 : ""
         );
 
     const [scheduledEnd, setScheduledEnd] =
         useState(
             initialData?.scheduled_end
-                ? toLocalDateTimeInput(
-                    initialData.scheduled_end
-                )
+                ? toCentralDateTimeInput(
+                      initialData.scheduled_end
+                  )
                 : ""
         );
 
@@ -99,7 +110,9 @@ export function LiveForm({
     // -------------------------------------------------------
 
     const [status, setStatus] =
-        useState<LiveBroadcastRecord["status"]>(
+        useState<
+            LiveBroadcastRecord["status"]
+        >(
             initialData?.status ?? "draft"
         );
 
@@ -137,17 +150,35 @@ export function LiveForm({
 
             return;
         }
+
         if (
             scheduledStart &&
-            scheduledEnd &&
-            new Date(scheduledEnd) <= new Date(scheduledStart)
+            scheduledEnd
         ) {
-            toast.error(
-                "Scheduled End must be later than Scheduled Start."
-            );
+            const startDate =
+                fromZonedTime(
+                    scheduledStart,
+                    BROADCAST_TIME_ZONE
+                );
 
-            return;
+            const endDate =
+                fromZonedTime(
+                    scheduledEnd,
+                    BROADCAST_TIME_ZONE
+                );
+
+            if (
+                endDate.getTime() <=
+                startDate.getTime()
+            ) {
+                toast.error(
+                    "Scheduled End must be later than Scheduled Start."
+                );
+
+                return;
+            }
         }
+
         try {
             setSaving(true);
 
@@ -157,7 +188,9 @@ export function LiveForm({
             let finalHeroUrl =
                 heroUrl;
 
-            // Upload new thumbnail when selected
+            // ---------------------------------------------------
+            // Upload Thumbnail
+            // ---------------------------------------------------
 
             if (thumbnailFile) {
                 finalThumbnailUrl =
@@ -168,6 +201,10 @@ export function LiveForm({
                     });
             }
 
+            // ---------------------------------------------------
+            // Upload Hero Image
+            // ---------------------------------------------------
+
             if (heroFile) {
                 finalHeroUrl =
                     await uploadFile({
@@ -177,47 +214,56 @@ export function LiveForm({
                     });
             }
 
-            const values: SaveLiveBroadcastInput = {
-                title: title.trim(),
+            // ---------------------------------------------------
+            // Build Broadcast Data
+            // ---------------------------------------------------
 
-                subtitle:
-                    subtitle.trim(),
+            const values: SaveLiveBroadcastInput =
+                {
+                    title:
+                        title.trim(),
 
-                description:
-                    description.trim(),
+                    subtitle:
+                        subtitle.trim(),
 
-                thumbnail_url:
-                    finalThumbnailUrl,
+                    description:
+                        description.trim(),
 
-                hero_url:
-                    finalHeroUrl,
+                    thumbnail_url:
+                        finalThumbnailUrl,
 
-                playback_url:
-                    playbackUrl.trim() || null,
+                    hero_url:
+                        finalHeroUrl,
 
-                scheduled_start:
-                    scheduledStart
-                        ? new Date(
-                            scheduledStart
-                        ).toISOString()
-                        : null,
+                    playback_url:
+                        playbackUrl.trim() ||
+                        null,
 
-                scheduled_end:
-                    scheduledEnd
-                        ? new Date(
-                            scheduledEnd
-                        ).toISOString()
-                        : null,
+                    scheduled_start:
+                        scheduledStart
+                            ? fromZonedTime(
+                                  scheduledStart,
+                                  BROADCAST_TIME_ZONE
+                              ).toISOString()
+                            : null,
 
-                status,
+                    scheduled_end:
+                        scheduledEnd
+                            ? fromZonedTime(
+                                  scheduledEnd,
+                                  BROADCAST_TIME_ZONE
+                              ).toISOString()
+                            : null,
 
-                featured,
+                    status,
 
-                published,
+                    featured,
 
-                display_order:
-                    displayOrder,
-            };
+                    published,
+
+                    display_order:
+                        displayOrder,
+                };
 
             await saveLiveBroadcast(
                 values,
@@ -257,8 +303,8 @@ export function LiveForm({
             className="space-y-8"
         >
             {/* --------------------------------------------------
-          Broadcast Information
-      -------------------------------------------------- */}
+                Broadcast Information
+            -------------------------------------------------- */}
 
             <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
                 <h2 className="mb-6 text-xl font-semibold">
@@ -286,10 +332,16 @@ export function LiveForm({
                         </label>
 
                         <textarea
-                            value={description}
-                            onChange={(event) =>
+                            value={
+                                description
+                            }
+                            onChange={(
+                                event
+                            ) =>
                                 setDescription(
-                                    event.target.value
+                                    event
+                                        .target
+                                        .value
                                 )
                             }
                             className="h-36 w-full resize-y rounded-lg border border-zinc-700 bg-zinc-900 p-3 text-white outline-none focus:border-[#003B5C]"
@@ -300,8 +352,8 @@ export function LiveForm({
             </section>
 
             {/* --------------------------------------------------
-          Stream
-      -------------------------------------------------- */}
+                Stream
+            -------------------------------------------------- */}
 
             <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
                 <h2 className="mb-3 text-xl font-semibold">
@@ -309,20 +361,24 @@ export function LiveForm({
                 </h2>
 
                 <p className="text-sm text-zinc-400">
-                    This broadcast will automatically use the Texas Adventist Live
+                    This broadcast will
+                    automatically use the
+                    Texas Adventist Live
                     streaming channel.
                 </p>
 
                 {!cloudflareLiveHLS && (
                     <p className="mt-3 text-sm font-medium text-red-400">
-                        Cloudflare Live HLS URL is not configured.
+                        Cloudflare Live HLS
+                        URL is not
+                        configured.
                     </p>
                 )}
             </section>
 
             {/* --------------------------------------------------
-          Artwork
-      -------------------------------------------------- */}
+                Artwork
+            -------------------------------------------------- */}
 
             <div className="grid gap-8 xl:grid-cols-2">
                 <MediaUpload
@@ -332,7 +388,9 @@ export function LiveForm({
                     accept="image/jpeg,image/png,image/webp"
                     mediaType="image"
                     value={thumbnailUrl}
-                    selectedFile={thumbnailFile}
+                    selectedFile={
+                        thumbnailFile
+                    }
                     onFileChange={
                         setThumbnailFile
                     }
@@ -348,7 +406,9 @@ export function LiveForm({
                     accept="image/jpeg,image/png,image/webp"
                     mediaType="image"
                     value={heroUrl}
-                    selectedFile={heroFile}
+                    selectedFile={
+                        heroFile
+                    }
                     onFileChange={
                         setHeroFile
                     }
@@ -359,8 +419,8 @@ export function LiveForm({
             </div>
 
             {/* --------------------------------------------------
-          Schedule
-      -------------------------------------------------- */}
+                Schedule
+            -------------------------------------------------- */}
 
             <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
                 <h2 className="mb-6 text-xl font-semibold">
@@ -376,9 +436,17 @@ export function LiveForm({
                         <input
                             type="datetime-local"
                             step="60"
-                            value={scheduledStart}
-                            onChange={(event) =>
-                                setScheduledStart(event.target.value)
+                            value={
+                                scheduledStart
+                            }
+                            onChange={(
+                                event
+                            ) =>
+                                setScheduledStart(
+                                    event
+                                        .target
+                                        .value
+                                )
                             }
                             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 p-3 text-white outline-none focus:border-[#003B5C]"
                         />
@@ -392,10 +460,21 @@ export function LiveForm({
                         <input
                             type="datetime-local"
                             step="60"
-                            value={scheduledEnd}
-                            min={scheduledStart || undefined}
-                            onChange={(event) =>
-                                setScheduledEnd(event.target.value)
+                            value={
+                                scheduledEnd
+                            }
+                            min={
+                                scheduledStart ||
+                                undefined
+                            }
+                            onChange={(
+                                event
+                            ) =>
+                                setScheduledEnd(
+                                    event
+                                        .target
+                                        .value
+                                )
                             }
                             className="w-full rounded-lg border border-zinc-700 bg-zinc-900 p-3 text-white outline-none focus:border-[#003B5C]"
                         />
@@ -403,13 +482,15 @@ export function LiveForm({
                 </div>
 
                 <p className="mt-5 text-sm text-zinc-500">
-                    Schedule the expected start and end time of the live broadcast.
+                    All broadcast times are
+                    scheduled in Central
+                    Time (CT).
                 </p>
             </section>
 
             {/* --------------------------------------------------
-          Status
-      -------------------------------------------------- */}
+                Status
+            -------------------------------------------------- */}
 
             <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
                 <h2 className="mb-6 text-xl font-semibold">
@@ -424,9 +505,12 @@ export function LiveForm({
 
                         <select
                             value={status}
-                            onChange={(event) =>
+                            onChange={(
+                                event
+                            ) =>
                                 setStatus(
-                                    event.target
+                                    event
+                                        .target
                                         .value as LiveBroadcastRecord["status"]
                                 )
                             }
@@ -461,10 +545,16 @@ export function LiveForm({
                     <label className="flex items-center gap-3">
                         <input
                             type="checkbox"
-                            checked={featured}
-                            onChange={(event) =>
+                            checked={
+                                featured
+                            }
+                            onChange={(
+                                event
+                            ) =>
                                 setFeatured(
-                                    event.target.checked
+                                    event
+                                        .target
+                                        .checked
                                 )
                             }
                         />
@@ -477,10 +567,16 @@ export function LiveForm({
                     <label className="flex items-center gap-3">
                         <input
                             type="checkbox"
-                            checked={published}
-                            onChange={(event) =>
+                            checked={
+                                published
+                            }
+                            onChange={(
+                                event
+                            ) =>
                                 setPublished(
-                                    event.target.checked
+                                    event
+                                        .target
+                                        .checked
                                 )
                             }
                         />
@@ -497,11 +593,17 @@ export function LiveForm({
 
                         <input
                             type="number"
-                            value={displayOrder}
-                            onChange={(event) =>
+                            value={
+                                displayOrder
+                            }
+                            onChange={(
+                                event
+                            ) =>
                                 setDisplayOrder(
                                     Number(
-                                        event.target.value
+                                        event
+                                            .target
+                                            .value
                                     )
                                 )
                             }
@@ -512,8 +614,8 @@ export function LiveForm({
             </section>
 
             {/* --------------------------------------------------
-          Save
-      -------------------------------------------------- */}
+                Save
+            -------------------------------------------------- */}
 
             <button
                 type="submit"
@@ -523,8 +625,8 @@ export function LiveForm({
                 {saving
                     ? "Uploading & Saving..."
                     : isEditing
-                        ? "Update Broadcast"
-                        : "Save Broadcast"}
+                      ? "Update Broadcast"
+                      : "Save Broadcast"}
             </button>
         </form>
     );
@@ -538,7 +640,9 @@ type FieldProps = {
     label: string;
     value: string;
     placeholder: string;
-    onChange: (value: string) => void;
+    onChange: (
+        value: string
+    ) => void;
 };
 
 function Field({
@@ -556,10 +660,13 @@ function Field({
             <input
                 type="text"
                 value={value}
-                placeholder={placeholder}
+                placeholder={
+                    placeholder
+                }
                 onChange={(event) =>
                     onChange(
-                        event.target.value
+                        event.target
+                            .value
                     )
                 }
                 className="w-full rounded-lg border border-zinc-700 bg-zinc-900 p-3 text-white outline-none focus:border-[#003B5C]"
@@ -569,58 +676,15 @@ function Field({
 }
 
 // ---------------------------------------------------------
-// Date Time Field
+// Central Time Helper
 // ---------------------------------------------------------
 
-type DateTimeFieldProps = {
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-};
-
-function DateTimeField({
-    label,
-    value,
-    onChange,
-}: DateTimeFieldProps) {
-    return (
-        <div className="space-y-2">
-            <label className="text-sm font-medium text-zinc-200">
-                {label}
-            </label>
-
-            <input
-                type="datetime-local"
-                value={value}
-                onChange={(event) =>
-                    onChange(
-                        event.target.value
-                    )
-                }
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 p-3 text-white"
-            />
-        </div>
-    );
-}
-
-// ---------------------------------------------------------
-// Date Helper
-// ---------------------------------------------------------
-
-function toLocalDateTimeInput(
+function toCentralDateTimeInput(
     value: string
 ) {
-    const date = new Date(value);
-
-    const offset =
-        date.getTimezoneOffset();
-
-    const local = new Date(
-        date.getTime() -
-        offset * 60 * 1000
+    return formatInTimeZone(
+        value,
+        BROADCAST_TIME_ZONE,
+        "yyyy-MM-dd'T'HH:mm"
     );
-
-    return local
-        .toISOString()
-        .slice(0, 16);
 }
