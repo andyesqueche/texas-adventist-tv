@@ -14,23 +14,15 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  createClient,
-} from "@/lib/supabase/browser";
+import { createClient } from "@/lib/supabase/browser";
 
 export function LoginForm() {
   const router = useRouter();
 
-  const [email, setEmail] =
-    useState("");
-
-  const [password, setPassword] =
-    useState("");
-
-  const [
-    showPassword,
-    setShowPassword,
-  ] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] =
+    useState(false);
 
   const [loading, setLoading] =
     useState(false);
@@ -47,27 +39,22 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      const supabase =
-        createClient();
+      const supabase = createClient();
 
       const {
         error: signInError,
-      } =
-        await supabase.auth.signInWithPassword(
-          {
-            email:
-              email.trim(),
-
-            password,
-          }
-        );
+      } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
       if (signInError) {
         throw signInError;
       }
 
-      router.push("/admin");
+      router.replace("/admin");
       router.refresh();
+
     } catch (error) {
       console.error(
         "LOGIN ERROR:",
@@ -79,6 +66,7 @@ export function LoginForm() {
           ? error.message
           : "Unable to sign in."
       );
+
     } finally {
       setLoading(false);
     }
@@ -90,7 +78,7 @@ export function LoginForm() {
       className="mt-8 space-y-5"
     >
       {error ? (
-        <div className="rounded-xl border border-red-900/60 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-xl border border-red-900/50 bg-red-950/40 px-4 py-3 text-sm text-red-300">
           {error}
         </div>
       ) : null}
@@ -111,14 +99,12 @@ export function LoginForm() {
             type="email"
             value={email}
             onChange={(event) =>
-              setEmail(
-                event.target.value
-              )
+              setEmail(event.target.value)
             }
             autoComplete="email"
             required
             placeholder="you@example.com"
-            className="h-13 w-full rounded-xl border border-zinc-800 bg-zinc-950 py-3 pl-12 pr-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
+            className="w-full rounded-xl border border-zinc-800 bg-zinc-950 py-3 pl-12 pr-4 text-white outline-none transition placeholder:text-zinc-600 focus:border-zinc-600"
           />
         </div>
       </div>
@@ -166,8 +152,7 @@ export function LoginForm() {
             type="button"
             onClick={() =>
               setShowPassword(
-                (current) =>
-                  !current
+                (current) => !current
               )
             }
             className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 transition hover:text-white"

@@ -23,7 +23,7 @@ export default async function StudioLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 text-white">
+    <div className="flex min-h-screen bg-black text-white">
       <StudioSidebar />
 
       <main className="min-w-0 flex-1 overflow-y-auto">

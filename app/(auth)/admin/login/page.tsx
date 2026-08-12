@@ -6,25 +6,17 @@ import {
 } from "lucide-react";
 import { redirect } from "next/navigation";
 
-import {
-  LoginForm,
-} from "@/components/auth/login-form";
+import { LoginForm } from "@/components/auth/login-form";
+import { createClient } from "@/lib/supabase/server";
 
-import {
-  createClient,
-} from "@/lib/supabase/server";
-
-export const dynamic =
-  "force-dynamic";
+export const dynamic = "force-dynamic";
 
 export default async function AdminLoginPage() {
-  const supabase =
-    await createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
-  } =
-    await supabase.auth.getUser();
+  } = await supabase.auth.getUser();
 
   if (user) {
     redirect("/admin");
@@ -32,8 +24,9 @@ export default async function AdminLoginPage() {
 
   return (
     <main className="min-h-screen bg-black text-white">
-      <div className="mx-auto flex min-h-screen max-w-[1600px] flex-col px-6 lg:px-10">
-        <header className="flex h-24 items-center justify-between">
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-6 sm:px-8 lg:px-10">
+
+        <header className="flex items-center justify-between">
           <Link
             href="/"
             className="flex items-center gap-3"
@@ -58,7 +51,6 @@ export default async function AdminLoginPage() {
             className="inline-flex items-center gap-2 text-sm text-zinc-500 transition hover:text-white"
           >
             <ArrowLeft className="h-4 w-4" />
-
             Back to TV
           </Link>
         </header>
@@ -66,6 +58,7 @@ export default async function AdminLoginPage() {
         <section className="flex flex-1 items-center justify-center pb-24">
           <div className="w-full max-w-md">
             <div className="rounded-3xl border border-zinc-800 bg-zinc-950/70 p-7 shadow-2xl sm:p-9">
+
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#003B5C]">
                 <ShieldCheck className="h-6 w-6" />
               </div>
@@ -83,9 +76,11 @@ export default async function AdminLoginPage() {
               </p>
 
               <LoginForm />
+
             </div>
           </div>
         </section>
+
       </div>
     </main>
   );
