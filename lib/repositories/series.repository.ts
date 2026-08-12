@@ -1,6 +1,10 @@
 import { supabase } from "@/lib/supabase/client";
 import type { VideoRecord } from "@/types/video";
 
+export type SeriesOrientation =
+  | "landscape"
+  | "portrait";
+
 export type SeriesRecord = {
   id: string;
 
@@ -16,6 +20,8 @@ export type SeriesRecord = {
   thumbnail_url: string | null;
   hero_url: string | null;
   logo_url: string | null;
+
+  orientation: SeriesOrientation;
 
   featured: boolean;
   published: boolean;
@@ -38,6 +44,8 @@ export type SaveSeriesInput = {
   hero_url: string | null;
   logo_url: string | null;
 
+  orientation: SeriesOrientation;
+
   featured: boolean;
   published: boolean;
 };
@@ -57,6 +65,7 @@ const seriesFields = `
   thumbnail_url,
   hero_url,
   logo_url,
+  orientation,
   featured,
   published,
   updated_at
@@ -151,6 +160,9 @@ export async function createSeries(
       logo_url:
         values.logo_url,
 
+      orientation:
+        values.orientation,
+
       featured:
         values.featured,
 
@@ -202,6 +214,9 @@ export async function updateSeries(
 
       logo_url:
         values.logo_url,
+
+      orientation:
+        values.orientation,
 
       featured:
         values.featured,

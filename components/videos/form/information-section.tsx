@@ -1,3 +1,10 @@
+import { SelectField } from "@/components/ui/select-field";
+
+type CategoryOption = {
+  id: string;
+  name: string;
+};
+
 type InformationSectionProps = {
   title: string;
   subtitle: string;
@@ -5,6 +12,7 @@ type InformationSectionProps = {
   category: string;
   description: string;
 
+  categories?: CategoryOption[];
   showCategoryField?: boolean;
 
   onTitleChange: (value: string) => void;
@@ -20,6 +28,7 @@ export function InformationSection({
   slug,
   category,
   description,
+  categories = [],
   showCategoryField = true,
   onTitleChange,
   onSubtitleChange,
@@ -61,11 +70,15 @@ export function InformationSection({
         />
 
         {showCategoryField ? (
-          <TextField
+          <SelectField
             id="category"
             label="Category"
             value={category}
-            placeholder="Bible Studies"
+            placeholder="Select a category"
+            options={categories.map((item) => ({
+              value: item.name,
+              label: item.name,
+            }))}
             onChange={onCategoryChange}
           />
         ) : null}

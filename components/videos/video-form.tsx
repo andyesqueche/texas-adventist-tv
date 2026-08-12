@@ -18,8 +18,14 @@ type SeriesOption = {
   title: string;
 };
 
+type CategoryOption = {
+  id: string;
+  name: string;
+};
+
 type VideoFormProps = {
   series: SeriesOption[];
+  categories: CategoryOption[];
 
   initialData?: {
     id?: string;
@@ -28,6 +34,7 @@ type VideoFormProps = {
     subtitle: string | null;
     slug: string | null;
     description: string | null;
+
     category: string | null;
     series_id: string | null;
 
@@ -46,6 +53,7 @@ type VideoFormProps = {
 
 export function VideoForm({
   series,
+  categories,
   initialData,
 }: VideoFormProps) {
   const router = useRouter();
@@ -119,7 +127,7 @@ export function VideoForm({
     useState<string | null>(null);
 
   async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent
   ) {
     event.preventDefault();
 
@@ -133,6 +141,11 @@ export function VideoForm({
       return;
     }
 
+    if (!category) {
+      toast.error("Please select a category.");
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -140,7 +153,9 @@ export function VideoForm({
       let savedHeroURL = heroURL;
 
       if (thumbnailFile) {
-        setUploadStatus("Uploading thumbnail...");
+        setUploadStatus(
+          "Uploading thumbnail..."
+        );
 
         savedThumbnailURL = await uploadFile({
           file: thumbnailFile,
@@ -149,7 +164,9 @@ export function VideoForm({
       }
 
       if (heroFile) {
-        setUploadStatus("Uploading hero image...");
+        setUploadStatus(
+          "Uploading hero image..."
+        );
 
         savedHeroURL = await uploadFile({
           file: heroFile,
@@ -157,7 +174,9 @@ export function VideoForm({
         });
       }
 
-      setUploadStatus("Saving video information...");
+      setUploadStatus(
+        "Saving video information..."
+      );
 
       await saveVideoRecord(
         {
@@ -165,7 +184,8 @@ export function VideoForm({
           subtitle: subtitle.trim(),
           slug: slug.trim(),
           description: description.trim(),
-          category: category.trim(),
+
+          category,
 
           series_id: seriesId || null,
 
@@ -214,7 +234,7 @@ export function VideoForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-8"
+      className="space-y-6"
     >
       <InformationSection
         title={title}
@@ -222,6 +242,7 @@ export function VideoForm({
         slug={slug}
         category={category}
         description={description}
+        categories={categories}
         onTitleChange={setTitle}
         onSubtitleChange={setSubtitle}
         onSlugChange={setSlug}

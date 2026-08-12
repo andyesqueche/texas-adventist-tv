@@ -10,6 +10,12 @@ import {
   getSeriesOptions,
 } from "@/lib/repositories/series.repository";
 
+import {
+  getPublishedCategoryOptions,
+} from "@/lib/repositories/category.repository";
+
+export const dynamic = "force-dynamic";
+
 type Props = {
   params: Promise<{
     id: string;
@@ -21,24 +27,27 @@ export default async function EditVideoPage({
 }: Props) {
   const { id } = await params;
 
-  const [video, series] = await Promise.all([
-    getVideoById(id),
-    getSeriesOptions(),
-  ]);
+  const [video, series, categories] =
+    await Promise.all([
+      getVideoById(id),
+      getSeriesOptions(),
+      getPublishedCategoryOptions(),
+    ]);
 
   if (!video) {
     notFound();
   }
 
   return (
-    <div className="mx-auto max-w-6xl p-10">
-      <h1 className="mb-8 text-3xl font-bold">
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">
         Edit Video
       </h1>
 
       <VideoForm
         initialData={video}
         series={series}
+        categories={categories}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   FolderOpen,
+  House,
   Image,
   LayoutDashboard,
   Layers,
@@ -20,6 +21,11 @@ const menu = [
     href: "/admin",
     icon: LayoutDashboard,
   },
+  {
+  title: "Home Layout",
+  href: "/admin/home",
+  icon: House,
+},
   {
     title: "Videos",
     href: "/admin/videos",
