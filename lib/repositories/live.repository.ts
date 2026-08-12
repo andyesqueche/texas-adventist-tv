@@ -356,3 +356,43 @@ export async function deleteLiveBroadcast(
     throw error;
   }
 }
+export async function getPublicLiveBroadcast(): Promise<
+  LiveBroadcastRecord | null
+> {
+  const { data, error } = await supabase
+    .from("live_broadcasts")
+    .select(liveFields)
+    .eq("published", true)
+    .in("status", [
+      "live",
+      "starting_soon",
+      "scheduled",
+      "ended",
+      "replay",
+    ])
+    .order("featured", {
+      ascending: false,
+    })
+    .order("scheduled_start", {
+      ascending: false,
+      nullsFirst: false,
+    })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error(
+      "GET PUBLIC LIVE BROADCAST ERROR:",
+      {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      }
+    );
+
+    throw new Error(error.message);
+  }
+
+  return data as LiveBroadcastRecord | null;
+}
