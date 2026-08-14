@@ -1,7 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { FileVideo, ImageIcon, UploadCloud, X } from "lucide-react";
+import {
+  FileVideo,
+  ImageIcon,
+  UploadCloud,
+  X,
+} from "lucide-react";
 
 type MediaUploadProps = {
   id: string;
@@ -13,6 +18,8 @@ type MediaUploadProps = {
   selectedFile: File | null;
   onFileChange: (file: File | null) => void;
   onValueChange: (value: string | null) => void;
+
+  compact?: boolean;
 };
 
 export function MediaUpload({
@@ -25,18 +32,22 @@ export function MediaUpload({
   selectedFile,
   onFileChange,
   onValueChange,
+  compact = false,
 }: MediaUploadProps) {
   function handleFileChange(
     event: React.ChangeEvent<HTMLInputElement>
   ) {
-    const file = event.target.files?.[0] ?? null;
+    const file =
+      event.target.files?.[0] ?? null;
 
     if (!file) {
       return;
     }
 
     onFileChange(file);
-    onValueChange(URL.createObjectURL(file));
+    onValueChange(
+      URL.createObjectURL(file)
+    );
   }
 
   function removeFile() {
@@ -45,10 +56,22 @@ export function MediaUpload({
   }
 
   return (
-    <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold text-white">
+    <section
+      className={
+        compact
+          ? "h-full rounded-xl border border-zinc-800 bg-zinc-900/40 p-5"
+          : "rounded-xl border border-zinc-800 bg-zinc-900/40 p-6"
+      }
+    >
+      <div className="mb-4 flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h2
+            className={
+              compact
+                ? "text-lg font-semibold text-white"
+                : "text-xl font-semibold text-white"
+            }
+          >
             {label}
           </h2>
 
@@ -61,24 +84,37 @@ export function MediaUpload({
           <button
             type="button"
             onClick={removeFile}
-            className="inline-flex items-center gap-2 rounded-lg border border-red-900 px-3 py-2 text-sm text-red-400 transition hover:bg-red-950/40"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-red-900 px-3 py-2 text-sm text-red-400 transition hover:bg-red-950/40"
           >
             <X className="h-4 w-4" />
-            Remove
+
+            <span className="hidden sm:inline">
+              Remove
+            </span>
           </button>
         ) : null}
       </div>
 
       {value ? (
-        <div className="mb-5 overflow-hidden rounded-xl border border-zinc-800 bg-black">
+        <div
+          className={`overflow-hidden rounded-xl border border-zinc-800 bg-black ${
+            compact ? "mb-4" : "mb-5"
+          }`}
+        >
           {mediaType === "image" ? (
             <Image
               src={value}
               alt={label}
               width={1280}
               height={720}
-              unoptimized={value.startsWith("blob:")}
-              className="aspect-video w-full object-cover"
+              unoptimized={value.startsWith(
+                "blob:"
+              )}
+              className={
+                compact
+                  ? "aspect-video w-full object-cover"
+                  : "aspect-video w-full object-cover"
+              }
             />
           ) : (
             <video
@@ -90,12 +126,28 @@ export function MediaUpload({
           )}
         </div>
       ) : (
-        <div className="mb-5 flex aspect-video w-full items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-950">
+        <div
+          className={`flex aspect-video w-full items-center justify-center rounded-xl border border-dashed border-zinc-700 bg-zinc-950 ${
+            compact ? "mb-4" : "mb-5"
+          }`}
+        >
           <div className="text-center text-zinc-500">
             {mediaType === "image" ? (
-              <ImageIcon className="mx-auto h-10 w-10" />
+              <ImageIcon
+                className={
+                  compact
+                    ? "mx-auto h-8 w-8"
+                    : "mx-auto h-10 w-10"
+                }
+              />
             ) : (
-              <FileVideo className="mx-auto h-10 w-10" />
+              <FileVideo
+                className={
+                  compact
+                    ? "mx-auto h-8 w-8"
+                    : "mx-auto h-10 w-10"
+                }
+              />
             )}
 
             <p className="mt-3 text-sm">
@@ -107,11 +159,15 @@ export function MediaUpload({
 
       <label
         htmlFor={id}
-        className="flex cursor-pointer items-center justify-center gap-3 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800"
+        className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-200 transition hover:border-zinc-600 hover:bg-zinc-800"
       >
-        <UploadCloud className="h-5 w-5" />
+        <UploadCloud className="h-4 w-4" />
 
-        {selectedFile ? "Choose another file" : "Choose file"}
+        {selectedFile
+          ? "Choose another file"
+          : value
+            ? "Replace image"
+            : "Choose file"}
       </label>
 
       <input
@@ -123,7 +179,7 @@ export function MediaUpload({
       />
 
       {selectedFile ? (
-        <p className="mt-3 truncate text-sm text-zinc-500">
+        <p className="mt-3 truncate text-xs text-zinc-500">
           Selected: {selectedFile.name}
         </p>
       ) : null}

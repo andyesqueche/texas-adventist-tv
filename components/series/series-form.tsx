@@ -51,44 +51,51 @@ export function SeriesForm({
 }: SeriesFormProps) {
   const router = useRouter();
 
-  const isEditing =
-    Boolean(initialData?.id);
+  const isEditing = Boolean(
+    initialData?.id
+  );
 
-  const [title, setTitle] =
-    useState(
-      initialData?.title ?? ""
-    );
+  const [title, setTitle] = useState(
+    initialData?.title ?? ""
+  );
 
   const [subtitle, setSubtitle] =
     useState(
       initialData?.subtitle ?? ""
     );
 
-  const [slug, setSlug] =
-    useState(
-      initialData?.slug ?? ""
-    );
+  const [slug, setSlug] = useState(
+    initialData?.slug ?? ""
+  );
 
-  const [description, setDescription] =
-    useState(
-      initialData?.description ?? ""
-    );
+  const [
+    description,
+    setDescription,
+  ] = useState(
+    initialData?.description ?? ""
+  );
 
-  const [categoryId, setCategoryId] =
-    useState(
-      initialData?.category_id ?? ""
-    );
+  const [
+    categoryId,
+    setCategoryId,
+  ] = useState(
+    initialData?.category_id ?? ""
+  );
 
-  const [orientation, setOrientation] =
-    useState<SeriesOrientation>(
-      initialData?.orientation ??
-        "landscape"
-    );
+  const [
+    orientation,
+    setOrientation,
+  ] = useState<SeriesOrientation>(
+    initialData?.orientation ??
+      "landscape"
+  );
 
-  const [published, setPublished] =
-    useState(
-      initialData?.published ?? true
-    );
+  const [
+    published,
+    setPublished,
+  ] = useState(
+    initialData?.published ?? true
+  );
 
   const [featured, setFeatured] =
     useState(
@@ -102,22 +109,18 @@ export function SeriesForm({
     initialData?.thumbnail_url ?? null
   );
 
-  const [
-    heroURL,
-    setHeroURL,
-  ] = useState<string | null>(
-    initialData?.hero_url ?? null
-  );
+  const [heroURL, setHeroURL] =
+    useState<string | null>(
+      initialData?.hero_url ?? null
+    );
 
   const [
     thumbnailFile,
     setThumbnailFile,
   ] = useState<File | null>(null);
 
-  const [
-    heroFile,
-    setHeroFile,
-  ] = useState<File | null>(null);
+  const [heroFile, setHeroFile] =
+    useState<File | null>(null);
 
   const [saving, setSaving] =
     useState(false);
@@ -185,14 +188,12 @@ export function SeriesForm({
 
       await saveSeries(
         {
-          title:
-            title.trim(),
+          title: title.trim(),
 
           subtitle:
             subtitle.trim(),
 
-          slug:
-            slug.trim(),
+          slug: slug.trim(),
 
           description:
             description.trim(),
@@ -252,6 +253,8 @@ export function SeriesForm({
       onSubmit={handleSubmit}
       className="space-y-6"
     >
+      {/* GENERAL INFORMATION */}
+
       <InformationSection
         title={title}
         subtitle={subtitle}
@@ -260,7 +263,9 @@ export function SeriesForm({
         description={description}
         showCategoryField={false}
         onTitleChange={setTitle}
-        onSubtitleChange={setSubtitle}
+        onSubtitleChange={
+          setSubtitle
+        }
         onSlugChange={setSlug}
         onCategoryChange={() => {}}
         onDescriptionChange={
@@ -268,127 +273,139 @@ export function SeriesForm({
         }
       />
 
-      <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
-        <h2 className="mb-6 text-xl font-semibold">
-          Category
-        </h2>
-
-        <SelectField
-          id="category"
-          label="Show Category"
-          value={categoryId}
-          placeholder="Select a category"
-          options={categories.map(
-            (category) => ({
-              value:
-                category.id,
-              label:
-                category.name,
-            })
-          )}
-          onChange={setCategoryId}
-        />
-      </section>
-
-      {/* CONTENT FORMAT */}
+      {/* CLASSIFICATION */}
 
       <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
         <div className="mb-6">
-          <h2 className="text-xl font-semibold">
-            Content Format
+          <h2 className="text-xl font-semibold text-white">
+            Classification
           </h2>
 
-          <p className="mt-2 text-sm text-zinc-400">
-            Choose how this show
-            should be presented on
-            Texas Adventist TV.
+          <p className="mt-1 text-sm text-zinc-500">
+            Choose the category and
+            presentation format for
+            this show.
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <button
-            type="button"
-            onClick={() =>
-              setOrientation(
-                "landscape"
-              )
-            }
-            className={`rounded-xl border p-5 text-left transition ${
-              orientation ===
-              "landscape"
-                ? "border-[#0a79b8] bg-[#003B5C]/25 ring-1 ring-[#0a79b8]"
-                : "border-zinc-800 bg-zinc-950/50 hover:border-zinc-700"
-            }`}
-          >
-            <div className="flex items-center gap-5">
-              <div
-                className={`flex h-16 w-28 items-center justify-center rounded-lg border ${
+        <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+          {/* CATEGORY */}
+
+          <div>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-400">
+              Category
+            </h3>
+
+            <SelectField
+              id="category"
+              label="Show Category"
+              value={categoryId}
+              placeholder="Select a category"
+              options={categories.map(
+                (category) => ({
+                  value: category.id,
+                  label: category.name,
+                })
+              )}
+              onChange={
+                setCategoryId
+              }
+            />
+          </div>
+
+          {/* CONTENT FORMAT */}
+
+          <div>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-zinc-400">
+              Content Format
+            </h3>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setOrientation(
+                    "landscape"
+                  )
+                }
+                className={`rounded-xl border p-4 text-left transition ${
                   orientation ===
                   "landscape"
-                    ? "border-[#0a79b8] bg-[#003B5C]/30"
-                    : "border-zinc-700 bg-zinc-900"
+                    ? "border-[#0a79b8] bg-[#003B5C]/25 ring-1 ring-[#0a79b8]"
+                    : "border-zinc-800 bg-zinc-950/50 hover:border-zinc-700"
                 }`}
               >
-                <span className="text-xs font-semibold text-zinc-300">
-                  16:9
-                </span>
-              </div>
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`flex h-12 w-20 shrink-0 items-center justify-center rounded-lg border ${
+                      orientation ===
+                      "landscape"
+                        ? "border-[#0a79b8] bg-[#003B5C]/30"
+                        : "border-zinc-700 bg-zinc-900"
+                    }`}
+                  >
+                    <span className="text-xs font-semibold text-zinc-300">
+                      16:9
+                    </span>
+                  </div>
 
-              <div>
-                <div className="font-semibold text-white">
-                  Landscape
+                  <div>
+                    <div className="font-semibold text-white">
+                      Landscape
+                    </div>
+
+                    <div className="mt-1 text-xs text-zinc-500">
+                      Standard TV
+                    </div>
+                  </div>
                 </div>
+              </button>
 
-                <div className="mt-1 text-sm text-zinc-400">
-                  Standard TV
-                  presentation
-                </div>
-              </div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              setOrientation(
-                "portrait"
-              )
-            }
-            className={`rounded-xl border p-5 text-left transition ${
-              orientation ===
-              "portrait"
-                ? "border-[#0a79b8] bg-[#003B5C]/25 ring-1 ring-[#0a79b8]"
-                : "border-zinc-800 bg-zinc-950/50 hover:border-zinc-700"
-            }`}
-          >
-            <div className="flex items-center gap-5">
-              <div
-                className={`flex h-24 w-14 items-center justify-center rounded-lg border ${
+              <button
+                type="button"
+                onClick={() =>
+                  setOrientation(
+                    "portrait"
+                  )
+                }
+                className={`rounded-xl border p-4 text-left transition ${
                   orientation ===
                   "portrait"
-                    ? "border-[#0a79b8] bg-[#003B5C]/30"
-                    : "border-zinc-700 bg-zinc-900"
+                    ? "border-[#0a79b8] bg-[#003B5C]/25 ring-1 ring-[#0a79b8]"
+                    : "border-zinc-800 bg-zinc-950/50 hover:border-zinc-700"
                 }`}
               >
-                <span className="text-xs font-semibold text-zinc-300">
-                  9:16
-                </span>
-              </div>
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`flex h-16 w-10 shrink-0 items-center justify-center rounded-lg border ${
+                      orientation ===
+                      "portrait"
+                        ? "border-[#0a79b8] bg-[#003B5C]/30"
+                        : "border-zinc-700 bg-zinc-900"
+                    }`}
+                  >
+                    <span className="text-[10px] font-semibold text-zinc-300">
+                      9:16
+                    </span>
+                  </div>
 
-              <div>
-                <div className="font-semibold text-white">
-                  Portrait
-                </div>
+                  <div>
+                    <div className="font-semibold text-white">
+                      Portrait
+                    </div>
 
-                <div className="mt-1 text-sm text-zinc-400">
-                  Vertical video
-                  presentation
+                    <div className="mt-1 text-xs text-zinc-500">
+                      Vertical video
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </button>
             </div>
-          </button>
+          </div>
         </div>
       </section>
+
+      {/* ARTWORK */}
 
       <ArtworkSection
         thumbnailURL={
@@ -402,9 +419,7 @@ export function SeriesForm({
         setThumbnailURL={
           setThumbnailURL
         }
-        setHeroURL={
-          setHeroURL
-        }
+        setHeroURL={setHeroURL}
         setThumbnailFile={
           setThumbnailFile
         }
@@ -412,6 +427,8 @@ export function SeriesForm({
           setHeroFile
         }
       />
+
+      {/* PUBLISHING */}
 
       <PublishingSection
         published={published}
@@ -424,24 +441,30 @@ export function SeriesForm({
         }
       />
 
+      {/* STATUS */}
+
       {uploadStatus ? (
         <div className="rounded-lg border border-blue-900 bg-blue-950/40 px-4 py-3 text-sm text-blue-300">
           {uploadStatus}
         </div>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={saving}
-        className="rounded-lg bg-[#003B5C] px-6 py-3 font-semibold text-white transition hover:bg-[#004d78] disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {saving
-          ? uploadStatus ??
-            "Saving..."
-          : isEditing
-            ? "Update Show"
-            : "Save Show"}
-      </button>
+      {/* SAVE */}
+
+      <div className="flex items-center justify-end border-t border-zinc-800 pt-6">
+        <button
+          type="submit"
+          disabled={saving}
+          className="min-w-40 rounded-lg bg-[#003B5C] px-6 py-3 font-semibold text-white transition hover:bg-[#004d78] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {saving
+            ? uploadStatus ??
+              "Saving..."
+            : isEditing
+              ? "Update Show"
+              : "Save Show"}
+        </button>
+      </div>
     </form>
   );
 }
