@@ -12,6 +12,8 @@ export type VideoRecord = {
   featured: boolean;
   published: boolean;
 
+  display_order: number;
+
   thumbnail_url: string | null;
   hero_url: string | null;
   trailer_url: string | null;

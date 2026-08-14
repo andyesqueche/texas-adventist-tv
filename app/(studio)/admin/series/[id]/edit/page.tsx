@@ -1,8 +1,19 @@
 import { notFound } from "next/navigation";
 
 import { SeriesForm } from "@/components/series/series-form";
-import { getPublishedCategoryOptions } from "@/lib/repositories/category.repository";
-import { getSeriesById } from "@/lib/repositories/series.repository";
+import { SeriesVideoOrder } from "@/components/series/series-video-order";
+
+import {
+  getPublishedCategoryOptions,
+} from "@/lib/repositories/category.repository";
+
+import {
+  getSeriesById,
+} from "@/lib/repositories/series.repository";
+
+import {
+  getVideosForSeriesAdmin,
+} from "@/lib/repositories/video.repository";
 
 type EditSeriesPageProps = {
   params: Promise<{
@@ -15,11 +26,15 @@ export default async function EditSeriesPage({
 }: EditSeriesPageProps) {
   const { id } = await params;
 
-  const [series, categories] =
-    await Promise.all([
-      getSeriesById(id),
-      getPublishedCategoryOptions(),
-    ]);
+  const [
+    series,
+    categories,
+    videos,
+  ] = await Promise.all([
+    getSeriesById(id),
+    getPublishedCategoryOptions(),
+    getVideosForSeriesAdmin(id),
+  ]);
 
   if (!series) {
     notFound();
@@ -31,10 +46,16 @@ export default async function EditSeriesPage({
         Edit Show
       </h1>
 
-      <SeriesForm
-        initialData={series}
-        categories={categories}
-      />
+      <div className="space-y-8">
+        <SeriesForm
+          initialData={series}
+          categories={categories}
+        />
+
+        <SeriesVideoOrder
+          videos={videos}
+        />
+      </div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+
 import type {
   SaveVideoInput,
   VideoRecord,
@@ -14,6 +15,7 @@ const videoFields = `
   series_id,
   featured,
   published,
+  display_order,
   thumbnail_url,
   hero_url,
   trailer_url,
@@ -30,7 +32,9 @@ export async function getVideos(): Promise<
   const { data, error } = await supabase
     .from("videos")
     .select(videoFields)
-    .order("display_order");
+    .order("display_order", {
+      ascending: true,
+    });
 
   if (error) {
     console.error(
@@ -68,6 +72,35 @@ export async function getVideoById(
 export async function createVideo(
   values: SaveVideoInput
 ) {
+  let displayOrder = 0;
+
+  if (values.series_id) {
+    const { data, error } = await supabase
+      .from("videos")
+      .select("display_order")
+      .eq("series_id", values.series_id)
+      .order("display_order", {
+        ascending: false,
+      })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        "GET LAST VIDEO ORDER ERROR:",
+        error
+      );
+
+      throw new Error(error.message);
+    }
+
+    displayOrder =
+      typeof data?.display_order ===
+      "number"
+        ? data.display_order + 1
+        : 0;
+  }
+
   const { data, error } = await supabase
     .from("videos")
     .insert({
@@ -76,8 +109,7 @@ export async function createVideo(
       subtitle:
         values.subtitle || null,
 
-      slug:
-        values.slug,
+      slug: values.slug,
 
       description:
         values.description || null,
@@ -95,10 +127,10 @@ export async function createVideo(
 
       duration_seconds: 0,
 
-      rating:
-        "TV-G",
+      rating: "TV-G",
 
-      display_order: 0,
+      display_order:
+        displayOrder,
 
       thumbnail_url:
         values.thumbnail_url,
@@ -129,7 +161,7 @@ export async function createVideo(
       published:
         values.published,
     })
-    .select()
+    .select(videoFields)
     .single();
 
   if (error) {
@@ -141,7 +173,7 @@ export async function createVideo(
     throw new Error(error.message);
   }
 
-  return data;
+  return data as VideoRecord;
 }
 
 export async function updateVideo(
@@ -202,7 +234,7 @@ export async function updateVideo(
         new Date().toISOString(),
     })
     .eq("id", id)
-    .select()
+    .select(videoFields)
     .single();
 
   if (error) {
@@ -214,7 +246,7 @@ export async function updateVideo(
     throw new Error(error.message);
   }
 
-  return data;
+  return data as VideoRecord;
 }
 
 export async function deleteVideo(
@@ -307,10 +339,8 @@ export async function getVideosFromSeries(
     );
   }
 
-  const {
-    data,
-    error,
-  } = await query;
+  const { data, error } =
+    await query;
 
   if (error) {
     console.error(
@@ -349,10 +379,8 @@ export async function getRelatedVideos(
     );
   }
 
-  const {
-    data,
-    error,
-  } = await query;
+  const { data, error } =
+    await query;
 
   if (error) {
     console.error(
@@ -364,4 +392,64 @@ export async function getRelatedVideos(
   }
 
   return (data ?? []) as VideoRecord[];
+}
+
+export async function getVideosForSeriesAdmin(
+  seriesId: string
+): Promise<VideoRecord[]> {
+  const { data, error } = await supabase
+    .from("videos")
+    .select(videoFields)
+    .eq("series_id", seriesId)
+    .order("display_order", {
+      ascending: true,
+    })
+    .order("updated_at", {
+      ascending: false,
+    });
+
+  if (error) {
+    console.error(
+      "GET ADMIN SERIES VIDEOS ERROR:",
+      error
+    );
+
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as VideoRecord[];
+}
+
+export async function updateSeriesVideoOrder(
+  videos: {
+    id: string;
+    display_order: number;
+  }[]
+) {
+  const results = await Promise.all(
+    videos.map((video) =>
+      supabase
+        .from("videos")
+        .update({
+          display_order:
+            video.display_order,
+        })
+        .eq("id", video.id)
+    )
+  );
+
+  const failed = results.find(
+    (result) => result.error
+  );
+
+  if (failed?.error) {
+    console.error(
+      "UPDATE SERIES VIDEO ORDER ERROR:",
+      failed.error
+    );
+
+    throw new Error(
+      failed.error.message
+    );
+  }
 }
