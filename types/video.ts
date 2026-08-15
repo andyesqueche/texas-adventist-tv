@@ -22,7 +22,7 @@ export type VideoRecord = {
   stream_uid: string | null;
   playback_url: string | null;
   stream_status: string | null;
-
+  created_at: string;
   updated_at: string;
 };
 

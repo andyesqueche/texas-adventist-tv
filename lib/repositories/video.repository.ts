@@ -23,6 +23,7 @@ const videoFields = `
   stream_uid,
   playback_url,
   stream_status,
+  created_at,
   updated_at
 `;
 
@@ -32,8 +33,8 @@ export async function getVideos(): Promise<
   const { data, error } = await supabase
     .from("videos")
     .select(videoFields)
-    .order("display_order", {
-      ascending: true,
+    .order("created_at", {
+      ascending: false,
     });
 
   if (error) {
