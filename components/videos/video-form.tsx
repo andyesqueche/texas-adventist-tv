@@ -142,8 +142,8 @@ export function VideoForm({
     setTrailerPlaybackUrl,
   ] = useState(
     initialData?.trailer_playback_url ??
-      initialData?.trailer_url ??
-      ""
+    initialData?.trailer_url ??
+    ""
   );
 
   // --------------------------------------------------
@@ -394,24 +394,15 @@ export function VideoForm({
       />
 
       <MediaSection
-        trailerStreamUid={
-          trailerStreamUid
-        }
-        trailerPlaybackUrl={
-          trailerPlaybackUrl
-        }
-        setTrailerStreamUid={
-          setTrailerStreamUid
-        }
-        setTrailerPlaybackUrl={
-          setTrailerPlaybackUrl
-        }
+        videoId={initialData?.id}
+        trailerStreamUid={trailerStreamUid}
+        trailerPlaybackUrl={trailerPlaybackUrl}
+        setTrailerStreamUid={setTrailerStreamUid}
+        setTrailerPlaybackUrl={setTrailerPlaybackUrl}
         streamUid={streamUid}
         playbackUrl={playbackUrl}
         setStreamUid={setStreamUid}
-        setPlaybackUrl={
-          setPlaybackUrl
-        }
+        setPlaybackUrl={setPlaybackUrl}
       />
 
       <PublishingSection
