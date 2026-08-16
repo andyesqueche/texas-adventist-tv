@@ -142,7 +142,7 @@ export async function DELETE(
       process.env.CLOUDFLARE_ACCOUNT_ID;
 
     const apiToken =
-      process.env.CLOUDFLARE_API_TOKEN;
+        process.env.CLOUDFLARE_STREAM_TOKEN;
 
     if (!accountId || !apiToken) {
       return NextResponse.json(
