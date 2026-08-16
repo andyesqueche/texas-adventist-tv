@@ -43,8 +43,16 @@ type VideoFormProps = {
 
     thumbnail_url?: string | null;
     hero_url?: string | null;
+
+    // Legacy trailer
     trailer_url?: string | null;
 
+    // Cloudflare trailer
+    trailer_stream_uid?: string | null;
+    trailer_playback_url?: string | null;
+    trailer_stream_status?: string | null;
+
+    // Full video
     stream_provider?: string | null;
     stream_uid?: string | null;
     playback_url?: string | null;
@@ -59,6 +67,10 @@ export function VideoForm({
   const router = useRouter();
 
   const isEditing = Boolean(initialData?.id);
+
+  // --------------------------------------------------
+  // General Information
+  // --------------------------------------------------
 
   const [title, setTitle] = useState(
     initialData?.title ?? ""
@@ -84,6 +96,10 @@ export function VideoForm({
     initialData?.description ?? ""
   );
 
+  // --------------------------------------------------
+  // Publishing
+  // --------------------------------------------------
+
   const [published, setPublished] = useState(
     initialData?.published ?? false
   );
@@ -91,6 +107,10 @@ export function VideoForm({
   const [featured, setFeatured] = useState(
     initialData?.featured ?? false
   );
+
+  // --------------------------------------------------
+  // Artwork
+  // --------------------------------------------------
 
   const [thumbnailFile, setThumbnailFile] =
     useState<File | null>(null);
@@ -108,10 +128,27 @@ export function VideoForm({
       initialData?.hero_url ?? null
     );
 
-  const [trailerURL, setTrailerURL] =
-    useState<string | null>(
-      initialData?.trailer_url ?? null
+  // --------------------------------------------------
+  // Trailer - Cloudflare Stream
+  // --------------------------------------------------
+
+  const [trailerStreamUid, setTrailerStreamUid] =
+    useState(
+      initialData?.trailer_stream_uid ?? ""
     );
+
+  const [
+    trailerPlaybackUrl,
+    setTrailerPlaybackUrl,
+  ] = useState(
+    initialData?.trailer_playback_url ??
+      initialData?.trailer_url ??
+      ""
+  );
+
+  // --------------------------------------------------
+  // Full Video - Cloudflare Stream
+  // --------------------------------------------------
 
   const [streamUid, setStreamUid] = useState(
     initialData?.stream_uid ?? ""
@@ -121,10 +158,18 @@ export function VideoForm({
     initialData?.playback_url ?? ""
   );
 
+  // --------------------------------------------------
+  // Saving State
+  // --------------------------------------------------
+
   const [saving, setSaving] = useState(false);
 
   const [uploadStatus, setUploadStatus] =
     useState<string | null>(null);
+
+  // --------------------------------------------------
+  // Submit
+  // --------------------------------------------------
 
   async function handleSubmit(
     event: React.FormEvent
@@ -142,37 +187,56 @@ export function VideoForm({
     }
 
     if (!category) {
-      toast.error("Please select a category.");
+      toast.error(
+        "Please select a category."
+      );
       return;
     }
 
     try {
       setSaving(true);
 
-      let savedThumbnailURL = thumbnailURL;
-      let savedHeroURL = heroURL;
+      let savedThumbnailURL =
+        thumbnailURL;
+
+      let savedHeroURL =
+        heroURL;
+
+      // ----------------------------------------------
+      // Thumbnail
+      // ----------------------------------------------
 
       if (thumbnailFile) {
         setUploadStatus(
           "Uploading thumbnail..."
         );
 
-        savedThumbnailURL = await uploadFile({
-          file: thumbnailFile,
-          bucket: "thumbnails",
-        });
+        savedThumbnailURL =
+          await uploadFile({
+            file: thumbnailFile,
+            bucket: "thumbnails",
+          });
       }
+
+      // ----------------------------------------------
+      // Hero
+      // ----------------------------------------------
 
       if (heroFile) {
         setUploadStatus(
           "Uploading hero image..."
         );
 
-        savedHeroURL = await uploadFile({
-          file: heroFile,
-          bucket: "hero-images",
-        });
+        savedHeroURL =
+          await uploadFile({
+            file: heroFile,
+            bucket: "hero-images",
+          });
       }
+
+      // ----------------------------------------------
+      // Save Database Record
+      // ----------------------------------------------
 
       setUploadStatus(
         "Saving video information..."
@@ -181,27 +245,57 @@ export function VideoForm({
       await saveVideoRecord(
         {
           title: title.trim(),
+
           subtitle: subtitle.trim(),
+
           slug: slug.trim(),
-          description: description.trim(),
+
+          description:
+            description.trim(),
 
           category,
 
-          series_id: seriesId || null,
+          series_id:
+            seriesId || null,
 
           published,
+
           featured,
 
-          thumbnail_url: savedThumbnailURL,
-          hero_url: savedHeroURL,
-          trailer_url: trailerURL,
+          thumbnail_url:
+            savedThumbnailURL,
 
-          stream_provider: streamUid
-            ? "cloudflare"
-            : null,
+          hero_url:
+            savedHeroURL,
 
-          stream_uid: streamUid || null,
-          playback_url: playbackUrl || null,
+          // Legacy trailer field.
+          // Keep it populated for compatibility.
+          trailer_url:
+            trailerPlaybackUrl || null,
+
+          // Cloudflare trailer
+          trailer_stream_uid:
+            trailerStreamUid || null,
+
+          trailer_playback_url:
+            trailerPlaybackUrl || null,
+
+          trailer_stream_status:
+            trailerStreamUid
+              ? "processing"
+              : null,
+
+          // Full video - unchanged
+          stream_provider:
+            streamUid
+              ? "cloudflare"
+              : null,
+
+          stream_uid:
+            streamUid || null,
+
+          playback_url:
+            playbackUrl || null,
         },
         initialData?.id
       );
@@ -231,6 +325,10 @@ export function VideoForm({
     }
   }
 
+  // --------------------------------------------------
+  // Render
+  // --------------------------------------------------
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -247,7 +345,9 @@ export function VideoForm({
         onSubtitleChange={setSubtitle}
         onSlugChange={setSlug}
         onCategoryChange={setCategory}
-        onDescriptionChange={setDescription}
+        onDescriptionChange={
+          setDescription
+        }
       />
 
       <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-6">
@@ -260,39 +360,69 @@ export function VideoForm({
           label="Assign to Show"
           value={seriesId}
           placeholder="No show"
-          options={series.map((show) => ({
-            value: show.id,
-            label: show.title,
-          }))}
+          options={series.map(
+            (show) => ({
+              value: show.id,
+              label: show.title,
+            })
+          )}
           onChange={setSeriesId}
         />
       </section>
 
       <ArtworkSection
-        thumbnailURL={thumbnailURL}
+        thumbnailURL={
+          thumbnailURL
+        }
         heroURL={heroURL}
-        thumbnailFile={thumbnailFile}
+        thumbnailFile={
+          thumbnailFile
+        }
         heroFile={heroFile}
-        setThumbnailURL={setThumbnailURL}
-        setHeroURL={setHeroURL}
-        setThumbnailFile={setThumbnailFile}
-        setHeroFile={setHeroFile}
+        setThumbnailURL={
+          setThumbnailURL
+        }
+        setHeroURL={
+          setHeroURL
+        }
+        setThumbnailFile={
+          setThumbnailFile
+        }
+        setHeroFile={
+          setHeroFile
+        }
       />
 
       <MediaSection
-        trailerURL={trailerURL}
+        trailerStreamUid={
+          trailerStreamUid
+        }
+        trailerPlaybackUrl={
+          trailerPlaybackUrl
+        }
+        setTrailerStreamUid={
+          setTrailerStreamUid
+        }
+        setTrailerPlaybackUrl={
+          setTrailerPlaybackUrl
+        }
         streamUid={streamUid}
         playbackUrl={playbackUrl}
-        setTrailerURL={setTrailerURL}
         setStreamUid={setStreamUid}
-        setPlaybackUrl={setPlaybackUrl}
+        setPlaybackUrl={
+          setPlaybackUrl
+        }
       />
 
       <PublishingSection
         published={published}
         featured={featured}
-        onPublishedChange={setPublished}
-        onFeaturedChange={setFeatured}
+        onPublishedChange={
+          setPublished
+        }
+        onFeaturedChange={
+          setFeatured
+        }
       />
 
       {uploadStatus ? (

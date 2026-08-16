@@ -16,12 +16,22 @@ export type VideoRecord = {
 
   thumbnail_url: string | null;
   hero_url: string | null;
+
+  // Legacy trailer field.
+  // Keep it temporarily for compatibility.
   trailer_url: string | null;
 
+  // Trailer — Cloudflare Stream
+  trailer_stream_uid: string | null;
+  trailer_playback_url: string | null;
+  trailer_stream_status: string | null;
+
+  // Full Video — existing system
   stream_provider: string | null;
   stream_uid: string | null;
   playback_url: string | null;
   stream_status: string | null;
+
   created_at: string;
   updated_at: string;
 };
@@ -40,8 +50,17 @@ export type SaveVideoInput = {
 
   thumbnail_url: string | null;
   hero_url: string | null;
+
+  // Legacy trailer field.
+  // Keep it temporarily for compatibility.
   trailer_url: string | null;
 
+  // Trailer — Cloudflare Stream
+  trailer_stream_uid: string | null;
+  trailer_playback_url: string | null;
+  trailer_stream_status: string | null;
+
+  // Full Video — existing system
   stream_provider: string | null;
   stream_uid: string | null;
   playback_url: string | null;

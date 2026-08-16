@@ -19,6 +19,9 @@ const videoFields = `
   thumbnail_url,
   hero_url,
   trailer_url,
+  trailer_stream_uid,
+  trailer_playback_url,
+  trailer_stream_status,
   stream_provider,
   stream_uid,
   playback_url,
@@ -97,7 +100,7 @@ export async function createVideo(
 
     displayOrder =
       typeof data?.display_order ===
-      "number"
+        "number"
         ? data.display_order + 1
         : 0;
   }
@@ -141,6 +144,15 @@ export async function createVideo(
 
       trailer_url:
         values.trailer_url,
+
+      trailer_stream_uid:
+        values.trailer_stream_uid,
+
+      trailer_playback_url:
+        values.trailer_playback_url,
+
+      trailer_stream_status:
+        values.trailer_stream_status,
 
       stream_provider:
         values.stream_provider,
@@ -210,6 +222,15 @@ export async function updateVideo(
 
       trailer_url:
         values.trailer_url,
+
+      trailer_stream_uid:
+        values.trailer_stream_uid,
+
+      trailer_playback_url:
+        values.trailer_playback_url,
+
+      trailer_stream_status:
+        values.trailer_stream_status,
 
       stream_provider:
         values.stream_provider,
