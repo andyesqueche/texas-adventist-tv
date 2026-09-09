@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const NKJV_BIBLE_ID = "63097d2a0a2f7db3-01";
+
 export async function GET() {
   try {
     const apiKey = process.env.API_BIBLE_KEY;
@@ -18,16 +20,19 @@ export async function GET() {
       );
     }
 
-    // First test:
-    // Ask API.Bible which Bibles are available to this API key.
-    const response = await fetch(`${baseUrl}/bibles`, {
-      method: "GET",
-      headers: {
-        "api-key": apiKey,
-        Accept: "application/json",
-      },
-      cache: "no-store",
-    });
+    const passageId = "JOS.1.9";
+
+    const response = await fetch(
+      `${baseUrl}/bibles/${NKJV_BIBLE_ID}/passages/${passageId}?content-type=text&include-notes=false&include-titles=false&include-chapter-numbers=false&include-verse-numbers=false`,
+      {
+        method: "GET",
+        headers: {
+          "api-key": apiKey,
+          Accept: "application/json",
+        },
+        cache: "no-store",
+      }
+    );
 
     const data = await response.json();
 
@@ -42,32 +47,15 @@ export async function GET() {
       );
     }
 
-    const bibles = Array.isArray(data?.data)
-      ? data.data.map(
-          (bible: {
-            id?: string;
-            name?: string;
-            abbreviation?: string;
-            language?: {
-              id?: string;
-              name?: string;
-            };
-          }) => ({
-            id: bible.id,
-            name: bible.name,
-            abbreviation: bible.abbreviation,
-            language: bible.language,
-          })
-        )
-      : [];
-
     return NextResponse.json({
       ok: true,
-      count: bibles.length,
-      bibles,
+      bible: "NKJV",
+      bibleId: NKJV_BIBLE_ID,
+      reference: data?.data?.reference,
+      content: data?.data?.content,
     });
   } catch (error) {
-    console.error("API.Bible test error:", error);
+    console.error("API.Bible passage test error:", error);
 
     return NextResponse.json(
       {
