@@ -10,9 +10,9 @@ export type WatchDailyContentRecord = {
   verse_end: number | null;
 
   verse_reference_en: string;
-  verse_reference_es: string;
+  verse_reference_es: string | null;
   verse_text_en: string;
-  verse_text_es: string;
+  verse_text_es: string | null;
 
   prayer_title_en: string;
   prayer_title_es: string;
@@ -34,9 +34,9 @@ export type SaveWatchDailyContentInput = {
   verse_end: number | null;
 
   verse_reference_en: string;
-  verse_reference_es: string;
+  verse_reference_es: string | null;
   verse_text_en: string;
-  verse_text_es: string;
+  verse_text_es: string | null;
 
   prayer_title_en: string;
   prayer_title_es: string;
