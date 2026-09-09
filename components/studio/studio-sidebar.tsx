@@ -13,6 +13,7 @@ import {
   Tv,
   Users,
   Video,
+  Watch,
 } from "lucide-react";
 
 const menu = [
@@ -55,6 +56,11 @@ const menu = [
     title: "Live TV",
     href: "/admin/live",
     icon: Radio,
+  },
+  {
+    title: "Apple Watch",
+    href: "/admin/watch",
+    icon: Watch,
   },
   {
     title: "Media",
